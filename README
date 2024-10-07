@@ -1,0 +1,17 @@
+Kernel setup
+------------
+
+The msr driver must be loaded to write to MSRs from ring 3.
+
+$ insmod msr
+
+The pce bit (bit 8) must be set in cr4 to use rdpmc from ring 3.
+Build and load the driver before using the library.
+
+$ cd cr4
+$ make
+$ insmod pceset.ko
+
+Removing the driver clears the pce bit
+
+$ rmmod pceset

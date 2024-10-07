@@ -46,12 +46,12 @@ union counter_config {
     uint32_t umask : 8;
     uint32_t user : 1;
     uint32_t os : 1;
-    uint32_t edge_detect : 1;
-    uint32_t pin_control : 1;
-    uint32_t interrupt : 1;
-    uint32_t any_thread : 1;
-    uint32_t enable_cntrs : 1;
-    uint32_t invert_cntr_mask : 1;
+    uint32_t e : 1;
+    uint32_t pin : 1;
+    uint32_t in : 1;
+    uint32_t any : 1;
+    uint32_t en : 1;
+    uint32_t invert : 1;
     uint32_t cmask : 8;
     uint32_t reserved : 32;
   };
@@ -61,7 +61,7 @@ union counter_config {
 int pmu_init(struct pmu_ctx *);
 int pmu_clear(struct pmu_ctx *);
 int pmu_trace(struct pmu_ctx *, union counter_config *const, int);
-int pmu_read(struct pmu_ctx *, uint64_t *, int);
+void pmu_read(struct pmu_ctx *, uint64_t *, int);
 int pmu_exit(struct pmu_ctx *);
 
 #endif

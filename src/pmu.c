@@ -8,19 +8,13 @@
 
 #include <pmu.h>
 
-inline int rdmsr(struct pmu_ctx *p, uint64_t *val, off_t offset) {
-#ifdef CR4_PCE_SET
-  uint64_t a, d;
-  __asm __volatile("lfence" /* rdpmc is not serializing */
-                   "\n"
-                   "rdpmc"
+inline uint64_t rdpmc(int fixed, int index) {
+  uint64_t a, d, c = (fixed ? (0x4000 << 16) : 0) | index;
+  __asm __volatile("lfence;" /* rdpmc is not serializing */
+                   "rdpmc;"
                    : "=a"(a), "=d"(d)
-                   : "c"(offset));
-  *val = (d << 32) | a;
-  return 0;
-#else
-  return pread(p->fd, val, sizeof(*val), offset) != sizeof(*val);
-#endif
+                   : "c"(c));
+  return (d << 32) | a;
 }
 
 inline int wrmsr(struct pmu_ctx *p, uint64_t val, off_t offset) {
@@ -105,21 +99,18 @@ int pmu_trace(struct pmu_ctx *p, union counter_config *const events, int n) {
   return 0;
 }
 
-int pmu_read(struct pmu_ctx *p, uint64_t *vals, int n) {
-  int ret;
+void pmu_read(struct pmu_ctx *p, uint64_t *vals, int n) {
   n = n > p->npcntrs ? p->npcntrs : n;
 
+  /* Read fixed counters */
   for (int i = 0; i < p->nfcntrs; ++i)
-    if ((ret = rdmsr(p, vals + i, IA32_FIXED_CTR0 + i)))
-      return ret;
+    vals[i] = rdpmc(1, i);
 
   vals += p->nfcntrs;
 
+  /* Read variable counters */
   for (int i = 0; i < n; ++i)
-    if ((ret = rdmsr(p, vals + i, IA32_PERFEVTSEL0 + i)))
-      return ret;
-
-  return 0;
+    vals[i] = rdpmc(0, i);
 }
 
 inline int pmu_exit(struct pmu_ctx *p) { return close(p->fd); }
